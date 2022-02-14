@@ -2,6 +2,10 @@ import pyhik.hikvision
 
 import datetime
 import logging
+import time
+from PIL import Image
+import io
+
 
 try:
     import xml.etree.cElementTree as ET
@@ -24,12 +28,6 @@ _LOGGING = logging.getLogger(__name__)
 
 
 class HikCamera(pyhik.hikvision.HikCamera):
-#    def initialize(self):
-#        super(HikCamera, self).initialize()
-#        self.event_states.setdefault(
-#            'Line Crossing 1', []).append(
-#            [False, 1, 0, datetime.datetime.now(), 1, []])
-
     def process_stream(self, tree):
         """Process incoming event stream packets."""
         if not self.namespace[CONTEXT_ALERT]:
@@ -95,6 +93,25 @@ class HikCamera(pyhik.hikvision.HikCamera):
                     self.publish_changes(etype, echid)
                 self.watchdog.pet()
 
+    def sorting(self, box):
+        x0, y0, x1, y1 = box
+        if x0 > x1:
+            x0, x1 = x1, x0
+        if y0 > y1:
+            y0, y1 = y1, y0
+        return [x0, y0, x1, y1]
+
+    def get_image(self, box):
+        box = list(map(int, box))
+        box_final = self.sorting(box)
+        url = '%s/ISAPI/Streaming/channels/101/picture'
+        response = self.hik_request.get(url % self.root_url, timeout=CONNECT_TIMEOUT)
+        img = Image.open(io.BytesIO(response.content))
+        img_crop = img.crop(box_final)
+        img_crop.save(f'/root/config/www/hikvision/image{time.time()}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg')
+
+        print('')
+
     def update_attributes(self, event, channel, attr):
         """Update attribute list for current event/channel."""
         try:
@@ -104,3 +121,8 @@ class HikCamera(pyhik.hikvision.HikCamera):
         except KeyError:
             _LOGGING.debug('Error updating attributes for: (%s, %s)',
                            event, channel)
+        try:
+            box = attr[5]
+            self.get_image(box)
+        except Exception as e:
+            pass

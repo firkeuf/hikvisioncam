@@ -125,4 +125,4 @@ class HikCamera(pyhik.hikvision.HikCamera):
             box = attr[5]
             self.get_image(box)
         except Exception as e:
-            pass
+            _LOGGING.info(e)

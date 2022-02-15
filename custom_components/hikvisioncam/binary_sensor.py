@@ -252,7 +252,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def _sensor_region(self):
         """Extract sensor last update time."""
         try:
-            region = self._cam.get_attributes(self._sensor, self._channel)[4]
+            region = int(self._cam.get_attributes(self._sensor, self._channel)[4])
         except:
             region = ''
         return region
@@ -305,33 +305,25 @@ class HikvisionBinarySensor(BinarySensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
+        region = self._sensor_region()
         box = self._sensor_box()
         path = self._sensor_image_path(box)
         attr = {ATTR_LAST_TRIP_TIME: self._sensor_last_update(),
-                CONF_REGION: self._sensor_region(),
+                CONF_REGION: region,
                 'box': box,
                 CONF_FILE_PATH: path,
                 }
 
         if self._delay != 0:
             attr[ATTR_DELAY] = self._delay
-        self._cam.camdata.get_image(box, path)
+        if self._region == region:
+            self._cam.camdata.get_image(box, path)
         return attr
 
     def schedule_update_ha_state(self, force_refresh: bool = False) -> None:
-        try:
-            attr = self._cam.get_attributes(self._sensor, self._channel)
-            region = int(attr[4])
-        except:
-            region = ''
+        region = self._sensor_region()
         if self._region == region or region == '' or self._region == '':
-            _LOGGER.warning(f'1 ---- {time.time()} {attr}')
-            if region:
-                self._cam.get_image(attr[5])
-            _LOGGER.warning(f'2 ---- {time.time()}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
-            _LOGGER.warning(f'3 ---- {time.time()}')
-
 
     def _update_callback(self, msg):
         """Update the sensor's state, if needed."""

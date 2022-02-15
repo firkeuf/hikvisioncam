@@ -316,7 +316,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         if self._delay != 0:
             attr[ATTR_DELAY] = self._delay
-        if self._region == region:
+        _LOGGER.warning(f'extra_state_attributes -- |{self._region}|-|{region}|')
+        if self._region == region and region:
             self._cam.camdata.get_image(box, path)
         return attr
 

@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from datetime import timedelta
 import logging
+import time
 
 #from pyhik.hikvision import HikCamera
-from .utils import HikCamera
+from .utils import HikCamera, box_normalization
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
@@ -25,6 +26,8 @@ from homeassistant.const import (
     CONF_USERNAME,
     EVENT_HOMEASSISTANT_START,
     EVENT_HOMEASSISTANT_STOP,
+    CONF_FILE_PATH,
+    CONF_REGION,
 )
 from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
@@ -119,7 +122,6 @@ def setup_platform(
         return
 
     entities = []
-
 
     for sensor, channel_list in data.sensors.items():
         for channel in channel_list:
@@ -259,9 +261,17 @@ class HikvisionBinarySensor(BinarySensorEntity):
         """Extract sensor last update time."""
         try:
             box = self._cam.get_attributes(self._sensor, self._channel)[5]
+            box = box_normalization(box)
         except:
-            box = ''
+            box = None
         return box
+
+    def _sensor_image_path(self, box):
+        if box:
+            filename = f'/config/www/hikvision/image_{self.name}_{time.time()}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
+        else:
+            filename = f'/config/www/hikvision/image_{self.name}_{time.time()}_full.jpg'
+        return filename
 
     @property
     def name(self):
@@ -295,23 +305,32 @@ class HikvisionBinarySensor(BinarySensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
+        box = self._sensor_box()
+        path = self._sensor_image_path(box)
         attr = {ATTR_LAST_TRIP_TIME: self._sensor_last_update(),
-                'region': self._sensor_region(),
-                'box': self._sensor_box(),}
+                CONF_REGION: self._sensor_region(),
+                'box': box,
+                CONF_FILE_PATH: path,
+                }
 
         if self._delay != 0:
             attr[ATTR_DELAY] = self._delay
-
+        self._cam.camdata.get_image(box, path)
         return attr
 
     def schedule_update_ha_state(self, force_refresh: bool = False) -> None:
         try:
-            zz = self._cam.get_attributes(self._sensor, self._channel)
-            region = int(self._cam.get_attributes(self._sensor, self._channel)[4])
+            attr = self._cam.get_attributes(self._sensor, self._channel)
+            region = int(attr[4])
         except:
             region = ''
         if self._region == region or region == '' or self._region == '':
+            _LOGGER.warning(f'1 ---- {time.time()} {attr}')
+            if region:
+                self._cam.get_image(attr[5])
+            _LOGGER.warning(f'2 ---- {time.time()}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
+            _LOGGER.warning(f'3 ---- {time.time()}')
 
 
     def _update_callback(self, msg):

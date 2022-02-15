@@ -5,6 +5,7 @@ import logging
 import time
 from PIL import Image
 import io
+import threading
 
 
 try:
@@ -26,6 +27,17 @@ from pyhik.constants import (
 
 _LOGGING = logging.getLogger(__name__)
 
+
+def box_normalization(box):
+    if not box:
+        return None
+    box = list(map(int, box))
+    x0, y0, x1, y1 = box
+    if x0 > x1:
+        x0, x1 = x1, x0
+    if y0 > y1:
+        y0, y1 = y1, y0
+    return [x0, y0, x1, y1]
 
 class HikCamera(pyhik.hikvision.HikCamera):
     def process_stream(self, tree):
@@ -93,24 +105,26 @@ class HikCamera(pyhik.hikvision.HikCamera):
                     self.publish_changes(etype, echid)
                 self.watchdog.pet()
 
-    def sorting(self, box):
-        x0, y0, x1, y1 = box
-        if x0 > x1:
-            x0, x1 = x1, x0
-        if y0 > y1:
-            y0, y1 = y1, y0
-        return [x0, y0, x1, y1]
+    def get_image(self, box, path):
+        t = threading.Thread(target=self._get_image, args=(box, path,), name='GetImage')
+        t.start()
 
-    def get_image(self, box):
-        box = list(map(int, box))
-        box_final = self.sorting(box)
+    def _get_image(self, box, path):
         url = '%s/ISAPI/Streaming/channels/101/picture'
-        response = self.hik_request.get(url % self.root_url, timeout=CONNECT_TIMEOUT)
-        img = Image.open(io.BytesIO(response.content))
-        img_crop = img.crop(box_final)
-        img_crop.save(f'/root/config/www/hikvision/image{time.time()}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg')
-
-        print('')
+        try:
+            response = self.hik_request.get(url % self.root_url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT), stream=True)
+            _LOGGING.warning(response.status_code)
+            raw = io.BytesIO(response.content)
+            _LOGGING.warning('---1')
+            with Image.open(raw) as img:
+                _LOGGING.warning(f'---2  {box} {path}')
+                if box:
+                    img_crop = img.crop(box)
+                    img_crop.save(path)
+                else:
+                    img.save(path)
+        except Exception as e:
+            _LOGGING.info(e)
 
     def update_attributes(self, event, channel, attr):
         """Update attribute list for current event/channel."""
@@ -121,8 +135,4 @@ class HikCamera(pyhik.hikvision.HikCamera):
         except KeyError:
             _LOGGING.debug('Error updating attributes for: (%s, %s)',
                            event, channel)
-        try:
-            box = attr[5]
-            self.get_image(box)
-        except Exception as e:
-            _LOGGING.info(e)
+

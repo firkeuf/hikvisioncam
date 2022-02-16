@@ -260,8 +260,9 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def _sensor_box(self):
         """Extract sensor last update time."""
         try:
-            box = self._cam.get_attributes(self._sensor, self._channel)[5]
-            box = box_normalization(box)
+            attr = self._cam.get_attributes(self._sensor, self._channel)
+            _LOGGER.warning(f'_sensor_box {attr}')
+            box = box_normalization(attr[5])
         except:
             box = None
         return box
@@ -316,7 +317,6 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         if self._delay != 0:
             attr[ATTR_DELAY] = self._delay
-        _LOGGER.warning(f'extra_state_attributes -- |{self._region}|-|{region}|')
         if self._region == region and region:
             self._cam.camdata.get_image(box, path)
         return attr

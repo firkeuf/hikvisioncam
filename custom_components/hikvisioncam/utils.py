@@ -113,14 +113,13 @@ class HikCamera(pyhik.hikvision.HikCamera):
         url = '%s/ISAPI/Streaming/channels/101/picture'
         try:
             response = self.hik_request.get(url % self.root_url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT), stream=True)
-            _LOGGING.warning(response.status_code)
             raw = io.BytesIO(response.content)
-            _LOGGING.warning('---1')
             with Image.open(raw) as img:
                 _LOGGING.warning(f'---2  {box} {path}')
                 if box:
                     img_crop = img.crop(box)
                     img_crop.save(path)
+                    img.save(f'{path}.orig.jpg')
                 else:
                     img.save(path)
         except Exception as e:

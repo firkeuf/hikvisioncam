@@ -31,13 +31,21 @@ _LOGGING = logging.getLogger(__name__)
 def box_normalization(box):
     if not box:
         return None
-    box = list(map(int, box))
-    x0, y0, x1, y1 = box
-    if x0 > x1:
-        x0, x1 = x1, x0
-    if y0 > y1:
-        y0, y1 = y1, y0
-    return [x0, y0, x1, y1]
+    box_l = list(map(int, box))
+    if len(box_l) == 4:
+        x0, y0, x1, y1 = box_l
+        if x0 > x1:
+            x0, x1 = x1, x0
+        if y0 > y1:
+            y0, y1 = y1, y0
+        return [x0, y0, x1, y1]
+    elif len(box_l) == 8:
+        x = box_l[0::2]
+        y = box_l[1::2]
+        x.sort()
+        y.sort()
+        return [x[0], y[0], x[-1], y[-1]]
+
 
 class HikCamera(pyhik.hikvision.HikCamera):
     def process_stream(self, tree):

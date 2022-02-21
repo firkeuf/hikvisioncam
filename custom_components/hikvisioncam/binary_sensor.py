@@ -263,15 +263,26 @@ class HikvisionBinarySensor(BinarySensorEntity):
             attr = self._cam.get_attributes(self._sensor, self._channel)
             _LOGGER.warning(f'_sensor_box {attr}')
             box = box_normalization(attr[5])
-        except:
+        except Exception as e:
+            _LOGGER.warning(f'_sensor_box Except {e}')
             box = None
         return box
 
-    def _sensor_image_path(self, box):
+    def _sensor_last_tripped_time(self):
+        """Extract sensor last update time."""
+        try:
+            attr = self._cam.get_attributes(self._sensor, self._channel)
+            time = attr[3].timestamp()
+        except Exception as e:
+            _LOGGER.warning(f'_sensor_last_tripped_time Except {e}')
+            return time.time()
+        return time
+
+    def _sensor_image_path(self, box, time_stamp):
         if box:
-            filename = f'/config/www/hikvision/image_{self.name}_{time.time()}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
+            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
         else:
-            filename = f'/config/www/hikvision/image_{self.name}_{time.time()}_full.jpg'
+            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_full.jpg'
         return filename
 
     @property
@@ -308,7 +319,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
         """Return the state attributes."""
         region = self._sensor_region()
         box = self._sensor_box()
-        path = self._sensor_image_path(box)
+        time_stamp = self._sensor_last_tripped_time()
+        path = self._sensor_image_path(box, time_stamp)
         attr = {ATTR_LAST_TRIP_TIME: self._sensor_last_update(),
                 CONF_REGION: region,
                 'box': box,
@@ -317,6 +329,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         if self._delay != 0:
             attr[ATTR_DELAY] = self._delay
+        _LOGGER.warning(f'extra_state_attributes self._regions = {self._region} and region = {region}')
         if self._region == region and region:
             self._cam.camdata.get_image(box, path)
         return attr

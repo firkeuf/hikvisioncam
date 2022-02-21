@@ -337,6 +337,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
     def schedule_update_ha_state(self, force_refresh: bool = False) -> None:
         region = self._sensor_region()
+        _LOGGER.error(f'schedule_update_ha_state region = {region}')
         if self._region == region or region == '':
             _LOGGER.error(f'schedule_update_ha_state self._region = {self._region} region = {region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()

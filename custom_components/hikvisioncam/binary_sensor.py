@@ -240,7 +240,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._timer = None
 
         # Register callback function with pyHik
-        self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}5")
+        self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}")
 
     def _sensor_state(self):
         """Extract sensor state."""

@@ -217,6 +217,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._sensor = sensor
         self._channel = channel
         self._region = region
+        _LOGGER.error(f'__INIT__ region {region} sensor {sensor} channel {channel}')
 
         if self._cam.type == "NVR":
             self._name = f"{self._cam.name} {sensor} {channel}"
@@ -239,7 +240,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._timer = None
 
         # Register callback function with pyHik
-        self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}")
+        self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}5")
 
     def _sensor_state(self):
         """Extract sensor state."""
@@ -272,11 +273,11 @@ class HikvisionBinarySensor(BinarySensorEntity):
         """Extract sensor last update time."""
         try:
             attr = self._cam.get_attributes(self._sensor, self._channel)
-            time = attr[3].timestamp()
+            time_stamp = attr[3].timestamp()
         except Exception as e:
             _LOGGER.warning(f'_sensor_last_tripped_time Except {e}')
             return time.time()
-        return time
+        return time_stamp
 
     def _sensor_image_path(self, box, time_stamp):
         if box:
@@ -336,7 +337,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
     def schedule_update_ha_state(self, force_refresh: bool = False) -> None:
         region = self._sensor_region()
-        if self._region == region or region == '' or self._region == '':
+        if self._region == region or region == '':
+            _LOGGER.error(f'schedule_update_ha_state self._region = {self._region} region = {region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
 
     def _update_callback(self, msg):

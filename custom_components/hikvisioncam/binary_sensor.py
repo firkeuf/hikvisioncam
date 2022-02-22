@@ -337,14 +337,14 @@ class HikvisionBinarySensor(BinarySensorEntity):
             self._cam.camdata.get_image(box, path)
         return attr
 
-    def schedule_update_ha_state(self, force_refresh: bool = False, region='') -> None:
+    def schedule_update_ha_state(self, force_refresh: bool = False, region='', estate='') -> None:
         region = self._sensor_region()
-        _LOGGER.error(f'schedule_update_ha_state region = {region}')
+        _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}')
         if self._region == region or region == '':
-            _LOGGER.error(f'schedule_update_ha_state self._region = {self._region} region = {region}')
+            _LOGGER.error(f'schedule_update_ha_state {self.name} self._region = {self._region} region = {region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
 
-    def _update_callback(self, msg, region=''):
+    def _update_callback(self, msg, region='', estate=''):
         """Update the sensor's state, if needed."""
         _LOGGER.debug("Callback signal from: %s", msg)
         _LOGGER.error(f'_update_callback self._region = {self._region} Region = {region}')
@@ -356,7 +356,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
                 _LOGGER.warning(
                     "%s Called delayed (%ssec) update", self._name, self._delay
                 )
-                self.schedule_update_ha_state(False, region)
+                self.schedule_update_ha_state(False, region, estate)
                 self._timer = None
 
             if self._timer is not None:
@@ -373,8 +373,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
                 self._timer()
                 self._timer = None
 
-            self.schedule_update_ha_state(False, region)
+            self.schedule_update_ha_state(False, region, estate)
 
         else:
-            self.schedule_update_ha_state(False, region)
+            self.schedule_update_ha_state(False, region, estate)
 

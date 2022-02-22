@@ -114,7 +114,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 self.update_attributes(etype, echid, attr)
 
                 if estate != old_state:
-                    self.publish_changes(etype, echid, region_id)
+                    self.publish_changes(etype, echid, region_id, estate)
                 self.watchdog.pet()
 
     def get_image(self, box, path):
@@ -159,21 +159,21 @@ class HikCamera(pyhik.hikvision.HikCamera):
             _LOGGING.debug('Error updating attributes for: (%s, %s)',
                            event, channel)
 
-    def publish_changes(self, etype, echid, region=''):
+    def publish_changes(self, etype, echid, region='', estate=''):
         """Post updates for specified event type."""
-        _LOGGING.debug('%s Update: %s, %s',
+        _LOGGING.warning('%s Update: %s, %s',
                        self.name, etype, self.fetch_attributes(etype, echid))
         signal = 'ValueChanged.{}'.format(self.cam_id)
         sender = '{}.{}'.format(etype, echid)
         if dispatcher:
             dispatcher.send(signal=signal, sender=sender)
 
-        self._do_update_callback('{}.{}.{}{}'.format(self.cam_id, etype, echid,region), region)
+        self._do_update_callback('{}.{}.{}{}'.format(self.cam_id, etype, echid,region), region, estate)
 
-    def _do_update_callback(self, msg, region=''):
+    def _do_update_callback(self, msg, region='', estate=''):
         """Call registered callback functions."""
         for callback, sensor in self._updateCallbacks:
             if sensor == msg:
                 _LOGGING.debug('Update callback %s for sensor %s',
                                callback, sensor)
-                callback(msg, region)
+                callback(msg, region, estate)

@@ -13,6 +13,8 @@ try:
 except ImportError:
     import xml.etree.ElementTree as ET
 
+# Make pydispatcher optional to support legacy implentations
+# New usage should implement the event_callback
 try:
     from pydispatch import dispatcher
 except ImportError:
@@ -110,7 +112,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 self.update_attributes(etype, echid, attr)
 
                 if estate != old_state:
-                    self.publish_changes(etype, echid)
+                    self.publish_changes(etype, echid, region_id)
                 self.watchdog.pet()
 
     def get_image(self, box, path):
@@ -143,3 +145,13 @@ class HikCamera(pyhik.hikvision.HikCamera):
             _LOGGING.debug('Error updating attributes for: (%s, %s)',
                            event, channel)
 
+    def publish_changes(self, etype, echid, region):
+        """Post updates for specified event type."""
+        _LOGGING.debug('%s Update: %s, %s',
+                       self.name, etype, self.fetch_attributes(etype, echid))
+        signal = 'ValueChanged.{}'.format(self.cam_id)
+        sender = '{}.{}'.format(etype, echid)
+        if dispatcher:
+            dispatcher.send(signal=signal, sender=sender)
+
+        self._do_update_callback('{}.{}.{}{}'.format(self.cam_id, etype, echid,region))

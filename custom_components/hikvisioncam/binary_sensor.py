@@ -344,13 +344,13 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
     def _update_callback(self, msg):
         """Update the sensor's state, if needed."""
-        _LOGGER.warning("Callback signal from: %s", msg)
+        _LOGGER.debug("Callback signal from: %s", msg)
 
         if self._delay > 0 and not self.is_on:
             # Set timer to wait until updating the state
             def _delay_update(now):
                 """Timer callback for sensor update."""
-                _LOGGER.debug(
+                _LOGGER.warning(
                     "%s Called delayed (%ssec) update", self._name, self._delay
                 )
                 self.schedule_update_ha_state()

@@ -145,7 +145,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
             _LOGGING.debug('Error updating attributes for: (%s, %s)',
                            event, channel)
 
-    def publish_changes(self, etype, echid, region):
+    def publish_changes(self, etype, echid, region=''):
         """Post updates for specified event type."""
         _LOGGING.debug('%s Update: %s, %s',
                        self.name, etype, self.fetch_attributes(etype, echid))

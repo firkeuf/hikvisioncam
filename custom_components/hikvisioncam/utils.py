@@ -129,19 +129,22 @@ class HikCamera(pyhik.hikvision.HikCamera):
             _LOGGING.warning(f'_get_image --- 2 response ok')
             raw = io.BytesIO(response.content)
             _LOGGING.warning(f'_get_image --- 3 IO bytes')
-            with Image.open(raw) as img:
-                _LOGGING.warning(f'_get_image ---4  {box} {path}')
-                if box:
-                    try:
-                        img_crop = img.crop(box)
-                        img_crop.save(path)
-                        img.save(f'{path}.orig.jpg')
-                        _LOGGING.warning(f'_get_image --- 5 image saved with box')
-                    except Exception as ee:
-                        _LOGGING.info(f'_get_image EXCEPTION 0 {ee}')
-                else:
-                    img.save(path)
-            _LOGGING.warning(f'_get_image --- end try')
+            try:
+                with Image.open(raw) as img:
+                    _LOGGING.warning(f'_get_image ---4  {box} {path}')
+                    if box:
+                        try:
+                            img_crop = img.crop(box)
+                            img_crop.save(path)
+                            img.save(f'{path}.orig.jpg')
+                            _LOGGING.warning(f'_get_image --- 5 image saved with box')
+                        except Exception as ee:
+                            _LOGGING.info(f'_get_image EXCEPTION 0 {ee}')
+                    else:
+                        img.save(path)
+                _LOGGING.warning(f'_get_image --- end try')
+            except Exception as eee:
+                _LOGGING.info(f'_get_image EXCEPTION eee {eee}')
 
         except Exception as e:
             _LOGGING.info(f'_get_image EXCEPTION {e}')

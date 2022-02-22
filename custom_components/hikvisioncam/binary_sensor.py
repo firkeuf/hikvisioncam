@@ -6,7 +6,7 @@ import logging
 import time
 
 #from pyhik.hikvision import HikCamera
-from .utils import HikCamera, box_normalization
+from .utils import HikCamera, box_normalization, REGION_IDS
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
@@ -147,7 +147,7 @@ def setup_platform(
                     HikvisionBinarySensor(hass, sensor, channel[1], data, delay)
                 )
             if sensor in REGION_SENSORS:
-                for region in range(1, 5):
+                for region in REGION_IDS:
                     entities.append(
                             HikvisionBinarySensor(hass, sensor, channel[1], data, delay, region)
                     )
@@ -241,6 +241,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         # Register callback function with pyHik
         self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}{region}")
+        self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}")
 
     def _sensor_state(self):
         """Extract sensor state."""
@@ -335,16 +336,17 @@ class HikvisionBinarySensor(BinarySensorEntity):
             self._cam.camdata.get_image(box, path)
         return attr
 
-    def schedule_update_ha_state(self, force_refresh: bool = False) -> None:
+    def schedule_update_ha_state(self, force_refresh: bool = False, region='') -> None:
         region = self._sensor_region()
         _LOGGER.error(f'schedule_update_ha_state region = {region}')
         if self._region == region or region == '':
             _LOGGER.error(f'schedule_update_ha_state self._region = {self._region} region = {region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
 
-    def _update_callback(self, msg):
+    def _update_callback(self, msg, region=''):
         """Update the sensor's state, if needed."""
         _LOGGER.debug("Callback signal from: %s", msg)
+        _LOGGER.error(f'_update_callback self._region = {self._region} Region = {region}')
 
         if self._delay > 0 and not self.is_on:
             # Set timer to wait until updating the state
@@ -353,7 +355,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
                 _LOGGER.warning(
                     "%s Called delayed (%ssec) update", self._name, self._delay
                 )
-                self.schedule_update_ha_state()
+                self.schedule_update_ha_state(False, region)
                 self._timer = None
 
             if self._timer is not None:
@@ -370,8 +372,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
                 self._timer()
                 self._timer = None
 
-            self.schedule_update_ha_state()
+            self.schedule_update_ha_state(False, region)
 
         else:
-            self.schedule_update_ha_state()
+            self.schedule_update_ha_state(False, region)
 

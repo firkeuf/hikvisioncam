@@ -29,6 +29,8 @@ from pyhik.constants import (
 
 _LOGGING = logging.getLogger(__name__)
 
+REGION_IDS = [1, 2, 3, 4]
+
 
 def box_normalization(box):
     if not box:
@@ -154,4 +156,12 @@ class HikCamera(pyhik.hikvision.HikCamera):
         if dispatcher:
             dispatcher.send(signal=signal, sender=sender)
 
-        self._do_update_callback('{}.{}.{}{}'.format(self.cam_id, etype, echid,region))
+        self._do_update_callback('{}.{}.{}{}'.format(self.cam_id, etype, echid,region), region)
+
+    def _do_update_callback(self, msg, region=''):
+        """Call registered callback functions."""
+        for callback, sensor in self._updateCallbacks:
+            if sensor == msg:
+                _LOGGING.debug('Update callback %s for sensor %s',
+                               callback, sensor)
+                callback(msg, region)

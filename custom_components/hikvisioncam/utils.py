@@ -126,7 +126,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
         _LOGGING.warning(f'_get_image --- 1')
         try:
             response = self.hik_request.get(url % self.root_url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT), stream=True)
-            _LOGGING.warning(f'_get_image --- 2 response ok {response.status_code}')
+            _LOGGING.warning(f'_get_image --- 2 response ok {response.status_code} {response.reason} {response.url}')
             raw = io.BytesIO(response.content)
             _LOGGING.warning(f'_get_image --- 3 IO bytes')
             try:

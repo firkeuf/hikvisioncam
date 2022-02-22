@@ -123,19 +123,28 @@ class HikCamera(pyhik.hikvision.HikCamera):
 
     def _get_image(self, box, path):
         url = '%s/ISAPI/Streaming/channels/101/picture'
+        _LOGGING.warning(f'_get_image --- 1')
         try:
             response = self.hik_request.get(url % self.root_url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT), stream=True)
+            _LOGGING.warning(f'_get_image --- 2 response ok')
             raw = io.BytesIO(response.content)
+            _LOGGING.warning(f'_get_image --- 3 IO bytes')
             with Image.open(raw) as img:
-                _LOGGING.warning(f'---2  {box} {path}')
+                _LOGGING.warning(f'_get_image ---4  {box} {path}')
                 if box:
-                    img_crop = img.crop(box)
-                    img_crop.save(path)
-                    img.save(f'{path}.orig.jpg')
+                    try:
+                        img_crop = img.crop(box)
+                        img_crop.save(path)
+                        img.save(f'{path}.orig.jpg')
+                        _LOGGING.warning(f'_get_image --- 5 image saved with box')
+                    except Exception as ee:
+                        _LOGGING.info(f'_get_image EXCEPTION 0 {ee}')
                 else:
                     img.save(path)
+            _LOGGING.warning(f'_get_image --- end try')
+
         except Exception as e:
-            _LOGGING.info(e)
+            _LOGGING.info(f'_get_image EXCEPTION {e}')
 
     def update_attributes(self, event, channel, attr):
         """Update attribute list for current event/channel."""

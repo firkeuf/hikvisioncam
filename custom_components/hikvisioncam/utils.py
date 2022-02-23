@@ -119,7 +119,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 self.update_attributes(etype, echid, attr)
                 if estate:
                     self.curent_event_region.update({etype: region_id})
-                _LOGGING.error(f'process_stream estate -->> estate != old_state {estate != old_state} region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
+                _LOGGING.error(f'process_stream estate {estate} -->> estate != old_state {estate != old_state} region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
                 if True: #estate != old_state:
                     _LOGGING.error(f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
                     if not region_id:

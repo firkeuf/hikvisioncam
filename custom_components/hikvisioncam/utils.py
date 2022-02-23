@@ -52,6 +52,11 @@ def box_normalization(box):
 
 
 class HikCamera(pyhik.hikvision.HikCamera):
+    def __init__(self, host=None, port=DEFAULT_PORT,
+                usr=None, pwd=None, verify_ssl=True):
+        super(HikCamera, self).__init__(host, port, usr, pwd, verify_ssl)
+        self.curent_event_region = {}
+
     def process_stream(self, tree):
         """Process incoming event stream packets."""
         if not self.namespace[CONTEXT_ALERT]:
@@ -112,8 +117,14 @@ class HikCamera(pyhik.hikvision.HikCamera):
                         datetime.datetime.now(),
                         region_id, box]
                 self.update_attributes(etype, echid, attr)
+                if estate:
+                    self.curent_event_region.update({etype: region_id})
 
                 if estate != old_state:
+                    _LOGGING.error(f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
+                    if not region_id:
+                        _LOGGING.error(f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
+                        region_id = self.curent_event_region.get(etype, '')
                     self.publish_changes(etype, echid, region_id, estate)
                 self.watchdog.pet()
 
@@ -168,7 +179,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
         if dispatcher:
             dispatcher.send(signal=signal, sender=sender)
 
-        self._do_update_callback('{}.{}.{}{}'.format(self.cam_id, etype, echid,region), region, estate)
+        self._do_update_callback(f'{self.cam_id}.{etype}.{echid}{region}', region, estate)
 
     def _do_update_callback(self, msg, region='', estate=''):
         """Call registered callback functions."""

@@ -337,6 +337,9 @@ class HikvisionBinarySensor(BinarySensorEntity):
             self._cam.camdata.get_image(box, path)
         return attr
 
+    def async_update(self):
+        pass
+
     def schedule_update_ha_state(self, force_refresh: bool = False, region='', estate='') -> None:
         region = self._sensor_region()
         _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}')

@@ -7,7 +7,6 @@ from PIL import Image
 import io
 import threading
 
-
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
@@ -26,10 +25,12 @@ from pyhik.constants import (
     CONTEXT_TRIG, CONTEXT_MOTION, CONTEXT_ALERT, CHANNEL_NAMES, ID_TYPES,
     __version__)
 
-
 _LOGGING = logging.getLogger(__name__)
 
 REGION_IDS = [1, 2, 3, 4]
+REGION_SENSORS = ['Line Crossing',
+                  'Entering Region',
+                  ]
 
 
 def box_normalization(box):
@@ -53,7 +54,7 @@ def box_normalization(box):
 
 class HikCamera(pyhik.hikvision.HikCamera):
     def __init__(self, host=None, port=DEFAULT_PORT,
-                usr=None, pwd=None, verify_ssl=True):
+                 usr=None, pwd=None, verify_ssl=True):
         super(HikCamera, self).__init__(host, port, usr, pwd, verify_ssl)
         self.curent_event_region = {}
 
@@ -119,13 +120,22 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 self.update_attributes(etype, echid, attr)
                 if estate:
                     self.curent_event_region.update({etype: region_id})
-                _LOGGING.error(f'process_stream estate |{estate}| -->> estate != old_state {estate != old_state} region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
-                if True: #estate != old_state:
-                    _LOGGING.error(f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
+                _LOGGING.error(
+                    f'process_stream estate |{estate}| -->> estate != old_state {estate != old_state} region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
+                if True:  # estate != old_state:
+                    _LOGGING.error(
+                        f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
                     if not region_id:
-                        _LOGGING.error(f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
+                        _LOGGING.error(
+                            f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
                         region_id = self.curent_event_region.get(etype, '')
-                    self.publish_changes(etype, echid, region_id, estate)
+
+                    if etype in REGION_SENSORS and not estate:
+                        for r in REGION_IDS:
+                            _LOGGING.error(f'process_stream r {r} in if REGION_IDS {region_id}')
+                            self.publish_changes(etype, echid, str(r), estate)
+                    else:
+                        self.publish_changes(etype, echid, region_id, estate)
                 self.watchdog.pet()
 
     def get_image(self, box, path):
@@ -173,7 +183,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
     def publish_changes(self, etype, echid, region='', estate=''):
         """Post updates for specified event type."""
         _LOGGING.warning('%s Update: %s, %s',
-                       self.name, etype, self.fetch_attributes(etype, echid))
+                         self.name, etype, self.fetch_attributes(etype, echid))
         signal = 'ValueChanged.{}'.format(self.cam_id)
         sender = '{}.{}'.format(etype, echid)
         if dispatcher:

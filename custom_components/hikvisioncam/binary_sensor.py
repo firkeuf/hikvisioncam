@@ -6,7 +6,7 @@ import logging
 import time
 
 #from pyhik.hikvision import HikCamera
-from .utils import HikCamera, box_normalization, REGION_IDS
+from .utils import HikCamera, box_normalization, REGION_IDS, REGION_SENSORS
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
@@ -92,9 +92,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     }
 )
 
-REGION_SENSORS = ['Line Crossing',
-                  'Entering Region',
-                  ]
+
 
 def setup_platform(
     hass: HomeAssistant,
@@ -281,6 +279,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
         return time_stamp
 
     def _sensor_image_path(self, box, time_stamp):
+        if not self.is_on:
+            return ''
         if box:
             filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
         else:

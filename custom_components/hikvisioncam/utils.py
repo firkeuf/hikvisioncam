@@ -117,7 +117,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 attr = [estate, echid, int(ecount),
                         datetime.datetime.now(),
                         region_id, box]
-                self.update_attributes(etype, echid, attr)
+                #self.update_attributes(etype, echid, attr)
                 if estate:
                     self.curent_event_region.update({etype: region_id})
                 _LOGGING.error(
@@ -179,6 +179,25 @@ class HikCamera(pyhik.hikvision.HikCamera):
         except KeyError:
             _LOGGING.debug('Error updating attributes for: (%s, %s)',
                            event, channel)
+
+    def update_stale(self):
+        """Update stale active statuses"""
+        # Some events don't post an inactive XML, only active.
+        # If we don't get an active update for 5 seconds we can
+        # assume the event is no longer active and update accordingly.
+        for etype, echannels in self.event_states.items():
+            for eprop in echannels:
+                if eprop[3] is not None:
+                    sec_elap = ((datetime.datetime.now()-eprop[3])
+                                .total_seconds())
+                    # print('Seconds since last update: {}'.format(sec_elap))
+                    if sec_elap > 5 and eprop[0] is True:
+                        _LOGGING.debug('Updating stale event %s on CH(%s)',
+                                       etype, eprop[1])
+                        attr = [False, eprop[1], eprop[2],
+                                datetime.datetime.now()]
+                        self.update_attributes(etype, eprop[1], attr)
+                        self.publish_changes(etype, eprop[1])
 
     def publish_changes(self, etype, echid, region='', estate=''):
         """Post updates for specified event type."""

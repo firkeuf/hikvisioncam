@@ -5,7 +5,7 @@ from datetime import timedelta
 import logging
 import time
 
-#from pyhik.hikvision import HikCamera
+# from pyhik.hikvision import HikCamera
 from .utils import HikCamera, box_normalization, REGION_IDS, REGION_SENSORS
 import voluptuous as vol
 
@@ -93,12 +93,11 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 )
 
 
-
 def setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
+        hass: HomeAssistant,
+        config: ConfigType,
+        add_entities: AddEntitiesCallback,
+        discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
     """Set up the Hikvision binary sensor devices."""
     name = config.get(CONF_NAME)
@@ -147,7 +146,7 @@ def setup_platform(
             if sensor in REGION_SENSORS:
                 for region in REGION_IDS:
                     entities.append(
-                            HikvisionBinarySensor(hass, sensor, channel[1], data, delay, region)
+                        HikvisionBinarySensor(hass, sensor, channel[1], data, delay, region)
                     )
     add_entities(entities)
 
@@ -230,6 +229,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
         else:
             self._id = f"{self._cam.cam_id}.{sensor}.{channel}"
 
+        self._state = False
+
         if delay is None:
             self._delay = 0
         else:
@@ -239,7 +240,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         # Register callback function with pyHik
         self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}{region}")
-        #self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}")
+        # self._cam.camdata.add_update_callback(self._update_callback, f"{self._cam.cam_id}.{sensor}.{channel}")
 
     def _sensor_state(self):
         """Extract sensor state."""
@@ -300,7 +301,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     @property
     def is_on(self):
         """Return true if sensor is on."""
-        return self._sensor_state()
+        return self._state  #self._sensor_state()
 
     @property
     def device_class(self):
@@ -320,7 +321,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def extra_state_attributes(self):
         """Return the state attributes."""
         region = self._sensor_region()
-        box = self._sensor_box()
+        if self.is_on:
+            box = self._sensor_box()
         time_stamp = self._sensor_last_tripped_time()
         path = self._sensor_image_path(box, time_stamp)
         attr = {ATTR_LAST_TRIP_TIME: self._sensor_last_update(),
@@ -338,12 +340,14 @@ class HikvisionBinarySensor(BinarySensorEntity):
         return attr
 
     def async_update(self):
+        _LOGGER.warning(f'async update -------------------')
         pass
 
     def schedule_update_ha_state(self, force_refresh: bool = False, region='', estate='') -> None:
         region = self._sensor_region()
         _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}')
         if self._region == region or region == '':
+            self._state = (estate == True)
             _LOGGER.error(f'schedule_update_ha_state {self.name} self._region = {self._region} region = {region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
 
@@ -380,4 +384,3 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         else:
             self.schedule_update_ha_state(False, region, estate)
-

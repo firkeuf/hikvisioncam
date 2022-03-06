@@ -214,6 +214,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._sensor = sensor
         self._channel = channel
         self._region = region
+        self.sensor_region = None
         _LOGGER.error(f'__INIT__ region {region} sensor {sensor} channel {channel}')
 
         if self._cam.type == "NVR":
@@ -251,7 +252,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         """Extract sensor last update time."""
         return self._cam.get_attributes(self._sensor, self._channel)[3]
 
-    def _sensor_region(self):
+    def _sensor_region(self, attr=None):
         """Extract sensor last update time."""
         try:
             region = int(self._cam.get_attributes(self._sensor, self._channel)[4])
@@ -325,7 +326,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     @property
     def extra_state_attributes(self):
         """Return the state attributes."""
-        region = self._sensor_region()
+        region = self.sensor_region
         if self._state:
             box = self._box
         else:
@@ -351,12 +352,12 @@ class HikvisionBinarySensor(BinarySensorEntity):
         pass
 
     def schedule_update_ha_state(self, force_refresh: bool = False, region='', estate='', attr=None) -> None:
-        region = self._sensor_region()
+        self.sensor_region = self._sensor_region(attr)
         self._box = self._sensor_box(attr)
         _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}')
-        if self._region == region or region == '':
+        if self._region == self.sensor_region or self.sensor_region == '':
             self._state = (estate == True)
-            _LOGGER.error(f'schedule_update_ha_state {self.name} self._region = {self._region} region = {region}')
+            _LOGGER.error(f'schedule_update_ha_state {self.name} self._region = {self._region} region = {self.sensor_region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
 
     def _update_callback(self, msg, region='', estate='', attr=None):

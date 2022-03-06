@@ -133,9 +133,9 @@ class HikCamera(pyhik.hikvision.HikCamera):
                     if etype in REGION_SENSORS and not estate:
                         for r in REGION_IDS:
                             _LOGGING.error(f'process_stream r {r} in if REGION_IDS {region_id}')
-                            self.publish_changes(etype, echid, str(r), estate)
+                            self.publish_changes(etype, echid, str(r), estate, attr)
                     else:
-                        self.publish_changes(etype, echid, region_id, estate)
+                        self.publish_changes(etype, echid, region_id, estate, attr)
                 self.watchdog.pet()
 
     def get_image(self, box, path):
@@ -197,9 +197,9 @@ class HikCamera(pyhik.hikvision.HikCamera):
                         attr = [False, eprop[1], eprop[2],
                                 datetime.datetime.now()]
                         self.update_attributes(etype, eprop[1], attr)
-                        self.publish_changes(etype, eprop[1])
+                        self.publish_changes(etype, eprop[1], estate=False, attr=attr)
 
-    def publish_changes(self, etype, echid, region='', estate=''):
+    def publish_changes(self, etype, echid, region='', estate=None, attr=None):
         """Post updates for specified event type."""
         _LOGGING.warning('%s Update: %s, %s',
                          self.name, etype, self.fetch_attributes(etype, echid))
@@ -208,12 +208,12 @@ class HikCamera(pyhik.hikvision.HikCamera):
         if dispatcher:
             dispatcher.send(signal=signal, sender=sender)
 
-        self._do_update_callback(f'{self.cam_id}.{etype}.{echid}{region}', region, estate)
+        self._do_update_callback(f'{self.cam_id}.{etype}.{echid}{region}', region, estate, attr)
 
-    def _do_update_callback(self, msg, region='', estate=''):
+    def _do_update_callback(self, msg, region='', estate=None, attr=None):
         """Call registered callback functions."""
         for callback, sensor in self._updateCallbacks:
             if sensor == msg:
                 _LOGGING.debug('Update callback %s for sensor %s',
                                callback, sensor)
-                callback(msg, region, estate)
+                callback(msg, region, estate, attr)

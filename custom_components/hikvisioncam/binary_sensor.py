@@ -323,6 +323,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
         region = self._sensor_region()
         if self.is_on:
             box = self._sensor_box()
+        else:
+            box = None
         time_stamp = self._sensor_last_tripped_time()
         path = self._sensor_image_path(box, time_stamp)
         attr = {ATTR_LAST_TRIP_TIME: self._sensor_last_update(),

@@ -3,7 +3,7 @@
   "name": "Hikvisioncam",
   "documentation": "https://www.home-assistant.io/integrations/hikvisioncam",
   "requirements": ["pyHik==0.3.0",
-                  "Pillow==9.0.0"],
+                  "Pillow==9.0.1"],
   "codeowners": [
     "@firkeuf"
   ],

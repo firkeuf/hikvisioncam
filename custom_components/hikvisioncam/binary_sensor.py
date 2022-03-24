@@ -354,7 +354,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def schedule_update_ha_state(self, force_refresh: bool = False, region='', estate='', attr=None) -> None:
         self.sensor_region = self._sensor_region(attr)
         self._box = self._sensor_box(attr)
-        _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}')
+        _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}, attr = {attr}')
         if self._region == self.sensor_region or self.sensor_region == '':
             self._state = (estate == True)
             _LOGGER.error(f'schedule_update_ha_state {self.name} self._region = {self._region} region = {self.sensor_region}')
@@ -364,6 +364,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         """Update the sensor's state, if needed."""
         _LOGGER.debug("Callback signal from: %s", msg)
         _LOGGER.error(f'_update_callback self._region = {self._region} Region = {region}')
+        _LOGGER.error(f"_update_callback attr = {attr}")
 
         if self._delay > 0 and not self.is_on:
             # Set timer to wait until updating the state

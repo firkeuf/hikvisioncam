@@ -1,6 +1,7 @@
 """Support for Hikvision event stream events represented as binary sensors."""
 from __future__ import annotations
 
+import datetime
 from datetime import timedelta
 import logging
 import time
@@ -232,6 +233,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         self._state = False
         self._box = None
+        self._attr = [False, 1, None, datetime.datetime(2022, 1, 1, 1, 0, 0, 0)]
 
         if delay is None:
             self._delay = 0
@@ -278,7 +280,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def _sensor_last_tripped_time(self):
         """Extract sensor last update time."""
         try:
-            attr = self._cam.get_attributes(self._sensor, self._channel)
+            attr = self._attr  #self._cam.get_attributes(self._sensor, self._channel)
             time_stamp = attr[3].timestamp()
         except Exception as e:
             _LOGGER.warning(f'_sensor_last_tripped_time Except {e}')
@@ -357,6 +359,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}, attr = {attr}')
         if self._region == self.sensor_region or self.sensor_region == '':
             self._state = (estate == True)
+            self._attr = attr
             _LOGGER.error(f'schedule_update_ha_state {self.name} self._region = {self._region} region = {self.sensor_region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
 

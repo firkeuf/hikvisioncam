@@ -252,12 +252,12 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
     def _sensor_last_update(self):
         """Extract sensor last update time."""
-        return self._cam.get_attributes(self._sensor, self._channel)[3]
+        return self._attr[3] #self._cam.get_attributes(self._sensor, self._channel)[3]
 
     def _sensor_region(self, attr=None):
         """Extract sensor last update time."""
         try:
-            region = int(self._cam.get_attributes(self._sensor, self._channel)[4])
+            region = int(attr[4])
         except:
             region = ''
         return region

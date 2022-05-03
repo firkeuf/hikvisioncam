@@ -59,6 +59,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                  usr=None, pwd=None, verify_ssl=True):
         super(HikCamera, self).__init__(host, port, usr, pwd, verify_ssl)
         self.curent_event_region = {}
+        self.current_attr = []
 
     def alert_stream(self, reset_event, kill_event):
         """Open event stream."""
@@ -71,6 +72,8 @@ class HikCamera(pyhik.hikvision.HikCamera):
 
         # pylint: disable=too-many-nested-blocks
         while True:
+            next_content = False
+            raw = io.BytesIO()
 
             try:
                 stream = self.hik_request.get(url, stream=True,
@@ -88,11 +91,33 @@ class HikCamera(pyhik.hikvision.HikCamera):
                     fail_count = 0
                     self.watchdog.start()
 
-                for line in stream.iter_lines():
+                for line in stream.iter_lines(chunk_size=1):
                     # _LOGGING.debug('Processing line from %s', self.name)
                     # filter out keep-alive new lines
                     if line:
                         str_line = line.decode("utf-8", "ignore")
+
+                        if 'image/jpeg' in str_line:
+                            next_content = True
+                            continue
+
+                        if next_content:
+                            try:
+                                content_length = int(line.decode().split(' ')[1])
+                            except Exception as e:
+                                _LOGGING.error(f'Can not parse content length {e}')
+
+                            next_content = False
+                            time_stamp = self._sensor_last_tripped_time()
+                            try:
+                                box = box_normalization(self.current_attr[5])
+                            except Exception:
+                                box = False
+                            path = self._sensor_image_path(box, time_stamp)
+                            with open(path, 'wb') as f:
+                                chunk = stream.raw.read(content_length+3)  # remove \n\r\n
+                                f.write(chunk.removeprefix(b'\n\r\n'))     # remove \n\r\n
+                            continue
                         # New events start with --boundry
                         if str_line.find('<EventNotificationAlert') != -1:
                             # Start of event message
@@ -207,6 +232,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 attr = [estate, echid, int(ecount),
                         datetime.datetime.now(),
                         region_id, box]
+                self.current_attr = attr
                 #self.update_attributes(etype, echid, attr)
                 if estate:
                     self.curent_event_region.update({etype: region_id})
@@ -227,6 +253,25 @@ class HikCamera(pyhik.hikvision.HikCamera):
                     else:
                         self.publish_changes(etype, echid, region_id, estate, attr)
                 self.watchdog.pet()
+
+    def _sensor_last_tripped_time(self):
+        """Extract sensor last update time."""
+        try:
+            attr = self.current_attr  #self._cam.get_attributes(self._sensor, self._channel)
+            time_stamp = attr[3].timestamp()
+        except Exception as e:
+            _LOGGING.warning(f'_sensor_last_tripped_time Except {e}')
+            return time.time()
+        return time_stamp
+
+    def _sensor_image_path(self, box, time_stamp):
+        #if not self.is_on:
+        #    return ''
+        if box:
+            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
+        else:
+            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_full.jpg'
+        return filename
 
     def get_image(self, box, path):
         t = threading.Thread(target=self._get_image, args=(box, path,), name='GetImage')

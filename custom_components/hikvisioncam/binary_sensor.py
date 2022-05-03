@@ -346,7 +346,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         _LOGGER.warning(f'extra_state_attributes self._regions = {self._region} and region = {region}')
         #if self._region == region and region:
         _LOGGER.warning(f'extra_state_attributes in IF box = {box} path {path}')
-        self._cam.camdata.get_image(box, path)
+        #self._cam.camdata.get_image(box, path)
         return attr
 
     def async_update(self):

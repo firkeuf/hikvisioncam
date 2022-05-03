@@ -291,9 +291,9 @@ class HikvisionBinarySensor(BinarySensorEntity):
         if not self.is_on:
             return ''
         if box:
-            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
+            filename = f'/config/www/hikvision/image_{self._cam.camdata.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
         else:
-            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_full.jpg'
+            filename = f'/config/www/hikvision/image_{self._cam.camdata.name}_{time_stamp}_full.jpg'
         return filename
 
     @property

@@ -7,7 +7,7 @@ import logging
 import time
 
 # from pyhik.hikvision import HikCamera
-from .utils import HikCamera, box_normalization, REGION_IDS, REGION_SENSORS
+from .utils import HikCamera, REGION_IDS, REGION_SENSORS
 import voluptuous as vol
 
 from homeassistant.components.binary_sensor import (
@@ -234,6 +234,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._state = False
         self._box = None
         self._attr = [False, 1, None, datetime.datetime(2022, 1, 1, 1, 0, 0, 0)]
+        self._path = ''
 
         if delay is None:
             self._delay = 0
@@ -271,7 +272,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
                 attr = None
         try:
             _LOGGER.warning(f'_sensor_box {attr}')
-            box = box_normalization(attr[5])
+            box = attr[5]
         except Exception as e:
             _LOGGER.warning(f'_sensor_box Except {e}')
             box = None

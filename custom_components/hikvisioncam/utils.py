@@ -110,13 +110,32 @@ class HikCamera(pyhik.hikvision.HikCamera):
                             next_content = False
                             time_stamp = self._sensor_last_tripped_time()
                             try:
-                                box = box_normalization(self.current_attr[5])
+                                box = self.current_attr[5]
                             except Exception:
                                 box = False
                             path = self._sensor_image_path(box, time_stamp)
                             with open(path, 'wb') as f:
                                 chunk = stream.raw.read(content_length+3)  # remove \n\r\n
-                                f.write(chunk.removeprefix(b'\n\r\n'))     # remove \n\r\n
+                                fixed_chunk = chunk.removeprefix(b'\n\r\n')  # remove \n\r\n
+                                f.write(fixed_chunk)
+                            raw = io.BytesIO(fixed_chunk)
+                            with Image.open(raw) as img:
+                                box = self.current_attr[5]
+                                if box:
+                                    width, height = img.size
+                                    left = width * box[0] #*100/100
+                                    top = height * box [1]
+                                    right = width * (box[0] + box [2])
+                                    bottom = height * (box[1] + box[3])
+                                    object = (left, top, right, bottom)
+                                    try:
+                                        img_crop = img.crop(object)
+                                        img_crop.save(f'{path.removesuffix("jpg")}crop.jpg')
+
+                                    except Exception as ee:
+                                        _LOGGING.info(f'_get_image EXCEPTION 0 {ee}')
+                                else:
+                                    pass
                             continue
                         # New events start with --boundry
                         if str_line.find('<EventNotificationAlert') != -1:
@@ -219,7 +238,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                                                    f"/{self.element_query('DetectionRegionEntry', CONTEXT_ALERT)}"
                                                    f"/{self.element_query('TargetRect', CONTEXT_ALERT)}")
 
-                box = [q.text for q in box_tree.iter() if not q]
+                box = [float(q.text) for q in box_tree.iter() if not q]
             except:
                 region_id = ''
                 box = []

@@ -291,7 +291,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def _sensor_detectionTarget(self, attr=None):
         """Extract sensor detected object."""
         try:
-            detectionTarget = int(attr[7])
+            detectionTarget = int(attr[6])
         except:
             detectionTarget = ''
         return detectionTarget
@@ -299,7 +299,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def _sensor_image_path(self, attr=None):
         """Extract sensor file path."""
         try:
-            path = int(attr[8])
+            path = int(attr[7])
         except:
             path = ''
         return path
@@ -356,6 +356,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
                 CONF_REGION: region,
                 'box': box,
                 CONF_FILE_PATH: path,
+                'detected_object': self._object
                 }
 
         if self._delay != 0:

@@ -291,7 +291,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def _sensor_detectionTarget(self, attr=None):
         """Extract sensor detected object."""
         try:
-            detectionTarget = int(attr[6])
+            detectionTarget = attr[6]
         except Exception as e:
             _LOGGER.warning(f'_sensor_detectionTarget Except {e}')
             detectionTarget = ''
@@ -300,7 +300,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def _sensor_image_path(self, attr=None):
         """Extract sensor file path."""
         try:
-            path = int(attr[7])
+            path = attr[7]
         except Exception as e:
             _LOGGER.warning(f'_sensor_path Except {e}')
             path = ''

@@ -260,7 +260,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 estate = (estate == 'active')
                 old_state = state[0]
                 eventTime = datetime.datetime.now()
-                path = self._sensor_image_path(self.name, box, eventTime, estate, region_id)
+                path = self._sensor_image_path(self.name, box, eventTime.timestamp(), estate, region_id)
                 attr = [estate, echid, int(ecount),
                         eventTime,
                         region_id, box, detectionTarget, path]

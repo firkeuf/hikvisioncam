@@ -206,13 +206,24 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 region_id = tree.find(f"{self.element_query('DetectionRegionList', CONTEXT_ALERT)}"
                                       f"/{self.element_query('DetectionRegionEntry', CONTEXT_ALERT)}"
                                       f"/{self.element_query('regionID', CONTEXT_ALERT)}").text
+                #box_tree = tree.find(f"{self.element_query('DetectionRegionList', CONTEXT_ALERT)}"
+                #                     f"/{self.element_query('DetectionRegionEntry', CONTEXT_ALERT)}"
+                #                     f"/{self.element_query('RegionCoordinatesList', CONTEXT_ALERT)}")
+
+
+                detectionTarget = tree.find(f"{self.element_query('DetectionRegionList', CONTEXT_ALERT)}"
+                                            f"/{self.element_query('DetectionRegionEntry', CONTEXT_ALERT)}"
+                                            f"/{self.element_query('detectionTarget', CONTEXT_ALERT)}").text
+
                 box_tree = tree.find(f"{self.element_query('DetectionRegionList', CONTEXT_ALERT)}"
-                                     f"/{self.element_query('DetectionRegionEntry', CONTEXT_ALERT)}"
-                                     f"/{self.element_query('RegionCoordinatesList', CONTEXT_ALERT)}")
+                                                   f"/{self.element_query('DetectionRegionEntry', CONTEXT_ALERT)}"
+                                                   f"/{self.element_query('TargetRect', CONTEXT_ALERT)}")
+
                 box = [q.text for q in box_tree.iter() if not q]
             except:
                 region_id = ''
                 box = []
+                detectionTarget = 'others'
         except (AttributeError, KeyError, IndexError) as err:
             _LOGGING.error('Problem finding attribute: %s', err)
             return
@@ -229,9 +240,11 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 # If so, publish, otherwise do nothing
                 estate = (estate == 'active')
                 old_state = state[0]
+                eventTime = datetime.datetime.now()
+                path = self._sensor_image_path(self.name, box, eventTime, estate, region_id)
                 attr = [estate, echid, int(ecount),
-                        datetime.datetime.now(),
-                        region_id, box]
+                        eventTime,
+                        region_id, box, detectionTarget, path]
                 self.current_attr = attr
                 #self.update_attributes(etype, echid, attr)
                 if estate:
@@ -264,13 +277,13 @@ class HikCamera(pyhik.hikvision.HikCamera):
             return time.time()
         return time_stamp
 
-    def _sensor_image_path(self, box, time_stamp):
+    def _sensor_image_path(self, name, box, time_stamp, etype, region):
         #if not self.is_on:
         #    return ''
         if box:
-            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
+            filename = f'/config/www/hikvision/image_{name}_{time_stamp}_{etype}_{region}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
         else:
-            filename = f'/config/www/hikvision/image_{self.name}_{time_stamp}_full.jpg'
+            filename = f'/config/www/hikvision/image_{name}_{time_stamp}_{etype}_{region}_full.jpg'
         return filename
 
     def get_image(self, box, path):

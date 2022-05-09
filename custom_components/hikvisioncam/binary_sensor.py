@@ -287,14 +287,30 @@ class HikvisionBinarySensor(BinarySensorEntity):
             return time.time()
         return time_stamp
 
-    def _sensor_image_path(self, box, time_stamp):
-        if not self.is_on:
-            return ''
-        if box:
-            filename = f'/config/www/hikvision/image_{self._cam.camdata.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
-        else:
-            filename = f'/config/www/hikvision/image_{self._cam.camdata.name}_{time_stamp}_full.jpg'
-        return filename
+    def _sensor_detectionTarget(self, attr=None):
+        """Extract sensor detected object."""
+        try:
+            detectionTarget = int(attr[7])
+        except:
+            detectionTarget = ''
+        return detectionTarget
+
+    def _sensor_image_path(self, attr=None):
+        """Extract sensor file path."""
+        try:
+            path = int(attr[8])
+        except:
+            path = ''
+        return path
+
+    #def _sensor_image_path(self, box, time_stamp):
+    #    if not self.is_on:
+    #        return ''
+    #    if box:
+    #        filename = f'/config/www/hikvision/image_{self._cam.camdata.name}_{time_stamp}_{box[0]}_{box[1]}_{box[2]}_{box[3]}.jpg'
+    #    else:
+    #        filename = f'/config/www/hikvision/image_{self._cam.camdata.name}_{time_stamp}_full.jpg'
+    #    return filename
 
     @property
     def name(self):
@@ -334,7 +350,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         else:
             box = None
         time_stamp = self._sensor_last_tripped_time()
-        path = self._sensor_image_path(box, time_stamp)
+        path = self._path  # self._sensor_image_path(box, time_stamp)
         attr = {ATTR_LAST_TRIP_TIME: self._sensor_last_update(),
                 CONF_REGION: region,
                 'box': box,
@@ -356,6 +372,8 @@ class HikvisionBinarySensor(BinarySensorEntity):
     def schedule_update_ha_state(self, force_refresh: bool = False, region='', estate='', attr=None) -> None:
         self.sensor_region = self._sensor_region(attr)
         self._box = self._sensor_box(attr)
+        self._path = self._sensor_image_path(attr)
+        self._object = self._sensor_detectionTarget(attr)
         _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}, attr = {attr}')
         if self._region == self.sensor_region or self.sensor_region == '':
             self._state = (estate == True)

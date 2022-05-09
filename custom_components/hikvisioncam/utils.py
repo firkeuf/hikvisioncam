@@ -113,7 +113,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                                 box = self.current_attr[5]
                             except Exception:
                                 box = False
-                            path = self._sensor_image_path(box, time_stamp)
+                            path = self._sensor_image_path(self.name, box, time_stamp, self.current_attr[6], self.current_attr[4])
                             with open(path, 'wb') as f:
                                 chunk = stream.raw.read(content_length+3)  # remove \n\r\n
                                 fixed_chunk = chunk.removeprefix(b'\n\r\n')  # remove \n\r\n
@@ -260,7 +260,7 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 estate = (estate == 'active')
                 old_state = state[0]
                 eventTime = datetime.datetime.now()
-                path = self._sensor_image_path(self.name, box, eventTime.timestamp(), estate, region_id)
+                path = self._sensor_image_path(self.name, box, eventTime.timestamp(), etype, region_id)
                 attr = [estate, echid, int(ecount),
                         eventTime,
                         region_id, box, detectionTarget, path]

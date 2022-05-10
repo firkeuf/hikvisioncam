@@ -216,7 +216,6 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._channel = channel
         self._region = region
         self.sensor_region = None
-        _LOGGER.error(f'__INIT__ region {region} sensor {sensor} channel {channel}')
 
         if self._cam.type == "NVR":
             self._name = f"{self._cam.name} {sensor} {channel}"
@@ -271,7 +270,6 @@ class HikvisionBinarySensor(BinarySensorEntity):
             except:
                 attr = None
         try:
-            _LOGGER.warning(f'_sensor_box {attr}')
             box = attr[5]
         except Exception as e:
             _LOGGER.warning(f'_sensor_box Except {e}')
@@ -363,14 +361,11 @@ class HikvisionBinarySensor(BinarySensorEntity):
 
         if self._delay != 0:
             attr[ATTR_DELAY] = self._delay
-        _LOGGER.warning(f'extra_state_attributes self._regions = {self._region} and region = {region}')
         #if self._region == region and region:
-        _LOGGER.warning(f'extra_state_attributes in IF box = {box} path {path}')
         #self._cam.camdata.get_image(box, path)
         return attr
 
     def async_update(self):
-        _LOGGER.warning(f'async update -------------------')
         pass
 
     def schedule_update_ha_state(self, force_refresh: bool = False, region='', estate='', attr=None) -> None:
@@ -378,18 +373,14 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._box = self._sensor_box(attr)
         self._path = self._sensor_image_path(attr)
         self._object = self._sensor_detectionTarget(attr)
-        _LOGGER.error(f'schedule_update_ha_state {self.name} region = {region} estate {estate}, attr = {attr}')
         if self._region == self.sensor_region or self.sensor_region == '':
             self._state = (estate == True)
             self._attr = attr
-            _LOGGER.error(f'schedule_update_ha_state {self.name} self._region = {self._region} region = {self.sensor_region}')
             super(HikvisionBinarySensor, self).schedule_update_ha_state()
 
     def _update_callback(self, msg, region='', estate='', attr=None):
         """Update the sensor's state, if needed."""
         _LOGGER.debug("Callback signal from: %s", msg)
-        _LOGGER.error(f'_update_callback self._region = {self._region} Region = {region}')
-        _LOGGER.error(f"_update_callback attr = {attr}")
 
         if self._delay > 0 and not self.is_on:
             # Set timer to wait until updating the state

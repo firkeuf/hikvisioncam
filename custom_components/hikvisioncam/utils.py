@@ -268,19 +268,12 @@ class HikCamera(pyhik.hikvision.HikCamera):
                 #self.update_attributes(etype, echid, attr)
                 if estate:
                     self.curent_event_region.update({etype: region_id})
-                _LOGGING.error(
-                    f'process_stream estate |{estate}| -->> estate != old_state {estate != old_state} region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
                 if True:  # estate != old_state:
-                    _LOGGING.error(
-                        f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
                     if not region_id:
-                        _LOGGING.error(
-                            f'process_stream region_ig = {region_id}, pseudo region = {self.curent_event_region.get(etype, "")} //{self.curent_event_region}')
                         region_id = self.curent_event_region.get(etype, '')
 
                     if etype in REGION_SENSORS and not estate:
                         for r in REGION_IDS:
-                            _LOGGING.error(f'process_stream r {r} in if REGION_IDS {region_id}')
                             self.publish_changes(etype, echid, str(r), estate, attr)
                     else:
                         self.publish_changes(etype, echid, region_id, estate, attr)
@@ -311,26 +304,20 @@ class HikCamera(pyhik.hikvision.HikCamera):
 
     def _get_image(self, box, path):
         url = '%s/ISAPI/Streaming/channels/101/picture'
-        _LOGGING.warning(f'_get_image --- 1')
         try:
             response = self.hik_request.get(url % self.root_url, timeout=(CONNECT_TIMEOUT, READ_TIMEOUT), stream=True)
-            _LOGGING.warning(f'_get_image --- 2 response ok {response.status_code} {response.reason} {response.url}')
             raw = io.BytesIO(response.content)
-            _LOGGING.warning(f'_get_image --- 3 IO bytes')
             try:
                 with Image.open(raw) as img:
-                    _LOGGING.warning(f'_get_image ---4  {box} {path}')
                     if box:
                         try:
                             img_crop = img.crop(box)
                             img_crop.save(path)
                             img.save(f'{path}.orig.jpg')
-                            _LOGGING.warning(f'_get_image --- 5 image saved with box')
                         except Exception as ee:
                             _LOGGING.info(f'_get_image EXCEPTION 0 {ee}')
                     else:
                         img.save(path)
-                _LOGGING.warning(f'_get_image --- end try')
             except Exception as eee:
                 _LOGGING.info(f'_get_image EXCEPTION eee {eee}')
 

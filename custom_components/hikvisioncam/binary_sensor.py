@@ -216,6 +216,7 @@ class HikvisionBinarySensor(BinarySensorEntity):
         self._channel = channel
         self._region = region
         self.sensor_region = None
+        self._object = None
 
         if self._cam.type == "NVR":
             self._name = f"{self._cam.name} {sensor} {channel}"

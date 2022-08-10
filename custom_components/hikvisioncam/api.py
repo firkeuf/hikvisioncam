@@ -59,8 +59,9 @@ class APIHikvisionCamView(HomeAssistantView):
         print(xml_string)
         namespace = '{http://www.hikvision.com/ver20/XMLSchema}'
         root = ET.fromstring(xml_string)
+        download_name_list = root.findall(f'{namespace}matchList/{namespace}searchMatchItem/{namespace}mediaSegmentDescriptor/{namespace}playbackURI')
         try:
-            download_name = root.find(f'{namespace}matchList/{namespace}searchMatchItem/{namespace}mediaSegmentDescriptor/{namespace}playbackURI').text.replace('&', '&amp;')
+            download_name = download_name_list[-1].text.replace('&', '&amp;')
         except Exception as e:
             return e
         #download_name = 'rtsp://10.10.0.12/Streaming/tracks/101?starttime=2022-08-09T02:44:58Z&amp;endtime=2022-08-09T02:45:22Z&amp;name=ch01_00000000319000413&amp;size=15181692'
@@ -68,20 +69,7 @@ class APIHikvisionCamView(HomeAssistantView):
         xml_download = f'<downloadRequest><playbackURI>{download_name}</playbackURI></downloadRequest>'
         url_download = f'http://{host}/ISAPI/ContentMgmt/download'
         print('xml_download', xml_download)
-        """
-    <?xml
-        version='1.0'
-        ?>
-        <downloadRequest><playbackURI>
-            rtsp://10.10.0.12/Streaming/tracks/101?starttime=2022-08-09T02:44:58Z&amp;endtime=2022-08-09T02:45:22Z&amp;name=ch01_00000000319000413&amp;size=15181692
-            rtsp://10.10.0.12/Streaming/tracks/101/?starttime=20220809T024458Z&endtime=20220809T024522Z&name=ch01_00000000319000413&size=15181692
-            </playbackURI>
-        </downloadRequest>
 
-        """
-        """
- "1.0" encoding="utf-8"?><CMSearchDescription><searchID>C9EE9FAF-2520-0001-788E-76B91F801437</searchID><trackIDList><trackID>101</trackID></trackIDList><timeSpanList><timeSpan><startTime>2022-08-09T02:45:07Z</startTime><endTime>2022-08-09T02:45:59Z</endTime></timeSpan></timeSpanList><maxResults>50</maxResults><searchResultPostion>0</searchResultPostion><metadataList><metadataDescriptor>//recordType.meta.std-cgi.com</metadataDescriptor></metadataList></CMSearchDescription>
-        """
         #async with httpx.AsyncClient() as client:
         #    r = await client.post(url_download, data=xml_download, auth=auth)
 

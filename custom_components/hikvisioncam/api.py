@@ -1,8 +1,12 @@
 from datetime import datetime, timedelta
-from homeassistant.components.http import HomeAssistantView
+from aiohttp import web
+
+import pytz
 import httpx
 import xml.etree.ElementTree as ET
-from aiohttp import web
+
+from homeassistant.components.http import HomeAssistantView
+
 
 class APIHikvisionCamView(HomeAssistantView):
     """View to handle Services requests."""
@@ -22,19 +26,22 @@ class APIHikvisionCamView(HomeAssistantView):
         services = {'aaa': 'bbb'}
         return self.json(body)
 
-    async def post(self, request):
-        """Get registered services."""
+    def xml_search(self, timezone, native_time_string, delta=5):
+        native_time = datetime.strptime(native_time_string, '%Y-%m-%dT%H:%M:%S.%f')
+        last_tripped_time = pytz.timezone(timezone).localize(native_time, is_dst=None)
+        start_time = last_tripped_time - timedelta(seconds=delta)
+        end_time = last_tripped_time
+        return f'<?xml version="1.0" encoding="utf-8"?><CMSearchDescription><searchID>1</searchID><trackIDList><trackID>101</trackID></trackIDList><timeSpanList><timeSpan><startTime>{start_time.astimezone(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}</startTime><endTime>{end_time.astimezone(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}</endTime></timeSpan></timeSpanList><maxResults>2</maxResults><searchResultPostion>0</searchResultPostion><metadataList><metadataDescriptor>//recordType.meta.std-cgi.com</metadataDescriptor></metadataList></CMSearchDescription>'
 
+    async def post(self, request):
         data = await request.json()
+        hass = request.app["hass"]
         print(data)
         friendly_name = data.get('friendly_name').split()[0]
-        last_tripped_time = datetime.strptime(data.get('last_tripped_time'), '%Y-%m-%dT%H:%M:%S.%f')
-        start_time = last_tripped_time - timedelta(seconds=5)
-        end_time = last_tripped_time
+        last_tripped_time = data.get('last_tripped_time')
 
-        xml_search = f'<?xml version="1.0" encoding="utf-8"?><CMSearchDescription><searchID>1</searchID><trackIDList><trackID>101</trackID></trackIDList><timeSpanList><timeSpan><startTime>{start_time}</startTime><endTime>{end_time}</endTime></timeSpan></timeSpanList><maxResults>2</maxResults><searchResultPostion>0</searchResultPostion><metadataList><metadataDescriptor>//recordType.meta.std-cgi.com</metadataDescriptor></metadataList></CMSearchDescription>'
+        xml_search = self.xml_search(hass.config.time_zone, last_tripped_time)
 
-        hass = request.app["hass"]
         cam_list = hass.data['binary_sensor'].config['binary_sensor']
         url_data = get_url(cam_list, friendly_name)
         print(url_data)
@@ -49,11 +56,32 @@ class APIHikvisionCamView(HomeAssistantView):
             r = await client.post(url_search, data=xml_search, auth=auth)
         print(r)
         xml_string = r.text
+        print(xml_string)
         namespace = '{http://www.hikvision.com/ver20/XMLSchema}'
         root = ET.fromstring(xml_string)
-        download_name = root.find(f'{namespace}matchList/{namespace}searchMatchItem/{namespace}mediaSegmentDescriptor/{namespace}playbackURI')
+        try:
+            download_name = root.find(f'{namespace}matchList/{namespace}searchMatchItem/{namespace}mediaSegmentDescriptor/{namespace}playbackURI').text.replace('&', '&amp;')
+        except Exception as e:
+            return e
+        #download_name = 'rtsp://10.10.0.12/Streaming/tracks/101?starttime=2022-08-09T02:44:58Z&amp;endtime=2022-08-09T02:45:22Z&amp;name=ch01_00000000319000413&amp;size=15181692'
+
         xml_download = f'<downloadRequest><playbackURI>{download_name}</playbackURI></downloadRequest>'
         url_download = f'http://{host}/ISAPI/ContentMgmt/download'
+        print('xml_download', xml_download)
+        """
+    <?xml
+        version='1.0'
+        ?>
+        <downloadRequest><playbackURI>
+            rtsp://10.10.0.12/Streaming/tracks/101?starttime=2022-08-09T02:44:58Z&amp;endtime=2022-08-09T02:45:22Z&amp;name=ch01_00000000319000413&amp;size=15181692
+            rtsp://10.10.0.12/Streaming/tracks/101/?starttime=20220809T024458Z&endtime=20220809T024522Z&name=ch01_00000000319000413&size=15181692
+            </playbackURI>
+        </downloadRequest>
+
+        """
+        """
+ "1.0" encoding="utf-8"?><CMSearchDescription><searchID>C9EE9FAF-2520-0001-788E-76B91F801437</searchID><trackIDList><trackID>101</trackID></trackIDList><timeSpanList><timeSpan><startTime>2022-08-09T02:45:07Z</startTime><endTime>2022-08-09T02:45:59Z</endTime></timeSpan></timeSpanList><maxResults>50</maxResults><searchResultPostion>0</searchResultPostion><metadataList><metadataDescriptor>//recordType.meta.std-cgi.com</metadataDescriptor></metadataList></CMSearchDescription>
+        """
         #async with httpx.AsyncClient() as client:
         #    r = await client.post(url_download, data=xml_download, auth=auth)
 
